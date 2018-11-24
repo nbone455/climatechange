@@ -1,0 +1,228 @@
+---
+title: "Climate Change and Range Shifts in Chickadees"
+author: "Nic Bone"
+date: "April 9, 2018"
+output: html_document
+bibliography: library.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+```
+
+# Introduction
+
+Temperature increases in the 21st century are predicted, by the Intergovernmental Panel on Climate Change's most conservative estimate, to be between 0.2 to 1.7 degrees Celsius relative to 1986-2005 temperatures (@IPCC2014). This change, although seemingly small, will likely have impacts on daily and seasonal temperatures and have fairly likely impacts on the biologic systems living there. Understanding how the present biodiversity will respond to such a changing climate is an ongoing process. The impacts of temperature changes have been seen in various biotic systems, from morphological changes to changes in the adaptive behaviors (@Parmesan). A literature review on the subject found that 82% of "core ecological processes" showed evidence of change due to climate change (@Scheffers). 
+
+A recent study of animal traits and shifts in climate (measured by shifting of seasonal events) found that across multiple taxa and multiple continent, the traits and shifts are significantly correlated (@Root2002). This change in seasonal cues and organism response is known as phenology, and phenological shifts have been seen in migrating species (@Ogden2008), and changes in ranges -- the geographic distribution of species (@Chen2011) -- causing new interactions between species (and shifting zones of interactions) and displacement of species (@Sillett2000).
+
+
+One a study looking at the hybrid zone between two species of Chickadee (genus: *Poecile*), Taylor et al. , found that the zone -- that is, the range intersection between one species (*Poecile atricapillus*) and a different species (*Poecile carolinensis*) -- has moved northwards in southeastern Pennsylvania over two periods of years: 2000-2002 and 2010-2012 (@Taylor2014).  The study used both genetic data from 167 individuals as well as observational data from the citizen science database eBird. The combination of methods allowed for comparison between historical and current ranges. The authors also found that *P. carolinensis* is limited in range by the minimum winter temperature of the northern United States, and found that this proxy for climate change is generally a robust parameter (@Taylor2014). Since these data were from previous years -- ending in 2012 -- my intent is to use subsequent eBird data to see if the trend has continued. 
+
+
+Similar analyses have been performed with other North American bird taxa, such as Hitch and Leberg's study that looked at 56 different bird species and found that although birds with southern distributions have had a northward expansion, birds with northern distributions have not had a southern expansion (@HITCH2007). I will be comparing the different years' maximum latitudes of *Poecile carolinensis* observations to examine whether the species has expanded their northern range. If there seems to be a trend of increasing latitude, then minimum winter temperature data for the Midwest will be used to identify the relationship between climate and latitudinal range changes, which has been seen but not connected in other studies (@Chen2011). 
+
+
+## Hypotheses
+
+### Biological 
+Due to the relationship between temperature and northern range shifts found in multiple studies from previous observations, see above, the observational data since 2000 will continue to show this trend -- with the range of Carolina Chickadees moving increasingly northward (*Poecile carolinensis*). 
+
+### Statistical 
+The maximum northern latitude of Carolina Chickadee observations will be significantly different year to year, displaying the northward trend of the species' range. 
+
+# Analysis Preperation
+```{r, warning=TRUE}
+#Reading in the dataset (zipped ebird file)
+bird <- read.csv("bird_final.csv")
+head(bird)
+```
+
+```{r} 
+# How many years were taken from eBird?
+unique(bird$year)
+```
+
+```{r} 
+# Grouping the observations by year
+birdyears <- group_by(bird,year)
+```
+
+
+# Statistical Test: Linear Regression 
+
+
+```{r, include=FALSE}
+year2009 <- filter(birdyears, year == "2009") %>% 
+  group_by(species) %>% 
+    mutate(mean = mean(decimallatitude))
+
+year2010 <- filter(birdyears, year == "2010") %>% 
+  group_by(species) %>% 
+    mutate(mean = mean(decimallatitude))
+
+year2011 <- dplyr::filter(birdyears, year == "2011") %>% 
+    group_by(species) %>% 
+      mutate(mean = mean(decimallatitude))
+
+year2012 <- filter(birdyears, year == "2012") %>% 
+  group_by(species) %>% 
+    mutate(mean = mean(decimallatitude))
+
+year2013 <- filter(birdyears, year == "2013") %>% 
+  group_by(species) %>% 
+    mutate(mean = mean(decimallatitude))
+
+year2014 <- filter(birdyears, year == "2014") %>% 
+  group_by(species) %>% 
+    mutate(mean = mean(decimallatitude))
+
+year2015 <- filter(birdyears, year =="2015") %>% 
+  group_by(species) %>% 
+    mutate(mean = mean(decimallatitude))
+
+year2016 <- filter(birdyears, year == "2016") %>% 
+  group_by(species) %>% 
+    mutate(mean = mean(decimallatitude))
+``` 
+
+
+
+```{r}
+# Seeing the overall distribution by latitude and month
+
+g <- ggplot(data = birdyears, aes(birdyears$decimallatitude, fill = as.factor(birdyears$month))) + geom_histogram(binwidth = .06) + facet_grid(year~species)
+
+g + labs(fill = "Month", x = "Latitude", y = "Count")
+```
+
+<br>
+
+**Fig.1 Distribution of observations by latitude and month (1-12).**
+
+```{r}
+# Finding the mean and max for each speicfic year and species 
+birdyears2<- group_by(birdyears, species) %>% mutate(mean = mean(decimallatitude)) %>% mutate(max = max(decimallatitude))
+```
+
+```{r}
+# Making a dataframe with Carolina chickadees only
+carolina <- filter(birdyears2, species == "Poecile carolinensis")
+```
+
+## Testing Assumptions 
+
+Before doing a linear regression to see if year had any impact on the maximum latitude the chickadees were observed, the assumptions of the regression must be tested.
+
+
+### Linear Relationship
+
+Based on Fig. 1, the different lines can be seen for both species, with the year being the x-variable and the mean or max latitude being the y-variable. Visually, we can confirm linearity. 
+
+```{r}
+#Plotting mean latitude over time 
+by<- ggplot(birdyears2, aes(x=year, y = birdyears2$max,  color = as.factor(birdyears2$species))) + geom_point(shape = "4") + geom_smooth(method = "lm")
+
+by + labs(color = "Species", y = "Max Latitude", x = "Year") 
+```
+
+
+**Fig.2 Maximum observed latitude for Carolina Chickadees from 2009 to 2016, with added regression line.**
+
+
+```{r}
+#Making a linear model for Carolina Chickadee's maximum latitude for each year
+fit2 <- lm(max~year, data = carolina)
+```
+
+
+### Independent Y's
+
+```{r}
+plot(carolina$max ~ fit2$fitted.values) + abline(0,1)
+```
+
+The fitted values fall along the line, showing the Y's as independent.
+
+### Normal Distribution 
+
+```{r}
+#Checking to see if data are normally distributed
+hist(carolina$decimallatitude)
+```
+
+
+Although these data are not normally distributed, that is expected and the linear regression can still be performed. 
+
+## Making the Linear Model
+
+### Carolina Chickadee Analysis: Mean and Max
+```{r}
+#Carolina linear regression with y as the maximum latitude recorded for each year (the x variable)
+fit <- lm(max~year, data = carolina)
+summary(fit)
+```
+
+```{r}
+#Plotting the residuals of the linear regression
+plot(carolina$year, fit$residuals,
+     ylab = "Residuals", xlab = "Year",
+     main = "Max Latitude of Carolina Chickadee Observations") + abline(0,0)
+```
+
+```{r}
+# Testing the mean latitude and year, rather than the maximum latitude 
+fit2 <- lm(mean~year, data = carolina)
+summary(fit2)
+```
+
+
+# Results 
+
+Based on the results of the linear regression, even without adding a temperature proxy, there is not a significant interaction between maximum latitude of Carolina chickadee eBird observations and year (from 2009-2016) (see fig. 2). Based on the meta-analysis performed by Chen et al., latitudinal range changes -- like the changes seen in Taylor et al., study -- have a median rate of 16.9 km per decade (@Chen2011). However, that rate was not observed in my results, which I believe is due to both the methodological and biological explanations outlined below. 
+
+## Result Discussion: Methodological Explanations
+
+There are a few reasons I believe my result ended up the way it did, which fall into two categories: methodological and biological explanations.  
+
+Large scale analyses of changes in distribution, like the study performed by Hitch & Leberg, show strong evidence of P. carolinensis' northern range being expanded (with a mean northern shift of 53.80 km) (@HITCH2007). Smaller scale analyses of P. carolinensis, as previously mentioned, found the same result in Pennsylvania using genetic information. Extrapolating from these two positive result studies, I believe my dataset -- which had been significantly reduced due to computational limits -- was too  by the latitudinal range (there was a hard limit on the "north" parameter) as well  by the temporal ranges. These factors made it difficult to make a claim about the overall trend of range expansions, as we are not getting the full picture in either dimension (North-South and time). This would explain why the maximum latitude did not change significantly year to year, and why that trend *was* observed in similar studies. 
+
+Additionally, the data is sourced from eBird -- which, while often used as observational data, is ultimately based on the reports of people not specifically trained in the identification of these species -- especially considering the two chickadee species (Black-capped and Carolina) strongly resemble each other. Suggestions for these methodological limitations will be given in the conclusion of this report.
+
+
+## Result Discussion: Biological Explanations 
+
+In terms of non-methodological explanations, there are some potential biological reasons for the result of my analysis not displaying the same trend seen in other studies. One aspect of range expanding that is described in Chen et al., is that many environmental factors can change distribution (@Chen2011). An example of this in chickadees is the ability to survive colder winters than other birds -- and therefore being more "hardy" in relation to the seasonal temperature changes (@Taylor2014). Therefore, perhaps there are other environmental factors at play in the Midwest that don't occur elsewhere in North America which affect the range expansion of the Carolina species. Future studies could look for these environmental conditions, which will also be discussed in the conclusion.
+
+
+# Discussion: 
+
+
+## Using Distribution Changes to See Effects of Climate Change
+
+There are very serious implications of range changes due to climate change for species affected. One of these implications is the potential of extinction events which can occur when species' distributions are severely  or shifted by rapidly changing environments -- as present 'climate envelopes' become increasingly divergent from past 'envelopes' or the current environment of an organism (@Thomas). Understanding the relationship between climate and distribution can help predict threatened and vulnerable species in the future, as well as -- using the continually generated data by reactions of species to changing climate factors -- re-evaluate the models we used for predicting. 
+
+There are very real implications, then, for species which expand either from or to fragile ecosystems. If, for instance, there was a species that has less protection against a certain environmental condition -- like a lack of adaptations to withstand a seasonal change -- then range shifts could cause population changes fairly rapidly (@Thomas2004)
+
+Using the climate envelope models coupled with current distribution data, long-term predictions under certain climate change models can be performed and a better understanding our impact on these ecosystems can be gathered (@Hijmans2006) . 
+
+<br>
+<br>
+
+
+## Troubleshooting
+
+One issue I ran into was getting the dataset from eBird to be small enough to manipulate while being large enough to accurately test my question. Based on my result, and my understanding of some of the parametric issues I believe my solution of using a smaller area was a mistake. Since I was comparing maximum northern latitude, having a set maximum latitude by the data could have been resolved by using much more computing power. This 
+
+
+
+
+# References 
+
+Sullivan, B.L., C.L. Wood, M.J. Iliff, R.E. Bonney, D. Fink, and S. Kelling. 2009. eBird: a citizen-based bird observation network in the biological sciences. Biological Conservation 142: 2282-2292.
