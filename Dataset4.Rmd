@@ -1,0 +1,95 @@
+---
+title: 'Dataset 4 : Sea Level Changes'
+author: "Nic Bone"
+date: "February 26, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+install.packages("tidyr")
+install.packages("ggplot2")
+install.packages("dplyr")
+library(ggplot2)
+install.packages("wesanderson")
+library(wesanderson)
+```
+
+In this analysis, I will be calculating and looking at the expected mean sea level rise of the Polynesia/Micronesia/Oceania region (denoted "Pacific Islands") in the year 2050 comapared to the expected mean sea level rise of the East China Sea. I predict that the rate of increase in the Polynesia/Micronesia/Oceania will predict a significantly higher sea level increase (when controlling for different starting levels).
+
+
+```{r}
+# Reading in the dataset
+strend <- read.csv("ECH and Pacific.csv")
+
+head(strend)
+```
+
+```{r}
+#Visualizing the distribution of trends 
+ggplot(strend, aes(x=Region, y= Trend.Value, color = Region)) + geom_violin() + stat_summary(fun.y=mean, geom="point", color ="#F2AD00", shape=17, size=4) + scale_x_discrete(labels=c("East China Sea Region", "Pacific region")) +scale_color_manual(values=wes_palette(n=3, name="Darjeeling"))
+```
+
+
+
+
+```{r}
+library(dplyr)
+pac <- filter(strend, Region == ("P"))
+pac
+
+chin <- filter(strend, Region == ("C"))
+chin
+```
+```{r}
+#extrapolating the yearly trend to the year 2050
+
+trend <- (32*(strend$Trend.Value) - (strend$Trend.Value))
+
+ptrend <- (32*(pac$Trend.Value) - (pac$Trend.Value))
+
+ctrend <- (32*(chin$Trend.Value) - (chin$Trend.Value))
+
+paclevel2050 <- mutate(pac, New = ptrend)
+
+chinlevel2050 <- mutate(chin, New = ctrend)
+
+level2050 <- mutate(strend, New = trend)
+```
+
+```{r}
+#The sea level change by the year 2050
+level2050
+```
+
+
+Now we can see the 
+```{r}
+ggplot(level2050, aes(x=Region, y = New)) + geom_point()
+```
+
+```{r}
+mean(chinlevel2050$New)
+```
+
+```{r}
+mean(paclevel2050$New)
+```
+```{r}
+t.test(paclevel2050$New, chinlevel2050$New)
+```
+
+The results of the t-test show that the means of each region are not sig. different from each other. 
+
+
+# What it means
+
+Although the means of the East China Sea and Pacific island (including parts of Micro, Polynesi) are not significantly different in the 2050 sea levels
+
+
+
+
